@@ -1,0 +1,51 @@
+#Determining the dimensions of the KPI dataset.
+dim(KPI_Dataset_1)
+
+#Calculating the summary statistics of the independent and dependent variables
+summary(KPI_Dataset_1)
+
+#viewing the first 5 lines of the dataset
+head(KPI_Dataset_1)
+
+#Identifying in what form the data is in, whether it be numeric or text
+sapply(KPI_Dataset_1, class)
+
+#Checking the correlation between the variables and excluding rows with NA values
+data <- den_train
+complete_cases <- complete.cases(data)
+cor(data[complete_cases,2:16])
+
+#Using scatterplots to determine if any of the independent variables are correlated to the dependent variable Std External RMAs
+plot(kpi_reg[c(2:11)])
+
+#Removing highly correlated variables
+kpi_reg <- kpi_reg[,c(-2, -7, -8, -10)]
+
+#Changing IPO (issue per order) data into 0 or 1 for multiple regression testing
+kpi_reg$`Std IPO External`[kpi_reg$`Std IPO External` < 0.005] <- 0
+kpi_reg$`Std IPO External`[kpi_reg$`Std IPO External` >= 0.005] <- 1
+
+#Identifying and removing missing values within the dataset
+missmap(kpi_reg, col = c("blue", "red"), legend = FALSE)
+data.omit = na.omit(kpi_reg)
+missmap(kpi_reg, col = c("blue", "red"), legend = FALSE)
+
+#Logistic model using the dependent variable of Std IPO External which represents whether the quality goal was hit or missed.
+starting.model <- glm(kpi_reg$`Std IPO External` ~., data = kpi_reg)
+> summary(starting.model)
+
+#Changing date values to 1 and 2 based on time frame for two sample t-test for pandemic impact to daily production
+kpi_ttest <- KPI_Dataset_1
+kpi_ttest$`Date Reported`[kpi_ttest$`Date Reported` <= "2/28/2020"] <- 1
+kpi_ttest$`Date Reported`[kpi_ttest$`Date Reported` > "2/28/2020"] <- 2
+
+#Performing two sample t-test
+kpi_trun <- kpi_ttest[,c(1,5)]
+print(kpi_trun)
+
+#Changing number of clarifications logged per day to 1 and 2 based on median from summary values for clarification impact to daily production
+kpi_trun2 <- KPI_Dataset_1
+kpi_trun2$Clarifications[kpi_trun2$Clarifications <= 79] <- 1
+kpi_trun2$Clarifications[kpi_trun2$Clarifications >= 80] <- 2
+print(kpi_trun2$Clarifications)
+t.test(kpi_trun2$`Orders Booked` ~ kpi_trun2$Clarifications, data = kpi_trun, var.equal = TRUE, conf.level = 0.95)
